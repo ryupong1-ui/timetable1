@@ -3,70 +3,229 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coming Soon</title>
+<title>Book Checker by Ryu XP</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: "Prompt", sans-serif;
-        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        text-align: center;
-    }
+body {
+    font-family: Arial;
+    background: #eef2f7;
+    text-align: center;
+    padding: 10px;
+}
+.container {
+    max-width: 500px;
+    margin: auto;
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+}
+select, button {
+    padding: 12px;
+    margin: 5px;
+    width: 100%;
+    font-size: 16px;
+}
+button {
+    background: #007bff;
+    color: white;
+    border-radius: 8px;
+    border: none;
+}
+.correct { color: green; }
+.wrong { color: red; }
 
-    .container {
-        animation: fadeIn 1.5s ease-in-out;
-    }
+.list {
+    text-align: left;
+    background: #f7f7f7;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
 
-    h1 {
-        font-size: 48px;
-        margin-bottom: 10px;
-    }
-
-    p {
-        font-size: 20px;
-        opacity: 0.8;
-    }
-
-    .loader {
-        margin-top: 30px;
-        border: 6px solid rgba(255,255,255,0.2);
-        border-top: 6px solid #00ffd5;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        animation: spin 1s linear infinite;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+.done {
+    color: green;
+    font-weight: bold;
+}
 </style>
-
 </head>
 
 <body>
 
 <div class="container">
-    <h1>🚧 ระบบยังไม่เปิดตัว</h1>
-    <p>Coming Soon... กำลังพัฒนาโดยทีมงาน HER โปรดรอสักครู่</p>
-    <p>เปิดตัววันที่ 18 พฤษภาคม พ.ศ. 2569</p>
-    
-    <div class="loader"></div>
+
+<h2>📚 Book Checker by Ryu XP<br>จัดแบบอ้างอิงจากวันที่แล้ว</h2>
+<select id="day" onchange="showList()">
+    <option value="">-- เลือกวัน --</option>
+    <option>จันทร์</option>
+    <option>อังคาร</option>
+    <option>พุธ</option>
+    <option>พฤหัสบดี</option>
+    <option>ศุกร์</option>
+</select>
+
+<div id="bookList" class="list"></div>
+
+<button onclick="start()">📷 เริ่มสแกนเพื่อเพิ่มความแม่นยำ</button>
+
+<div id="reader"></div>
+
+<h3 id="result"></h3>
+<div id="status"></div>
+
 </div>
+
+<script> 
+//9786165762809 วิทยาศาสตร์ เล่ม 2
+//9786160551705 คอมพิวเตอร์
+//9786160551668 คณิตศาสตร์ เล่ม 2
+//9786160728732 วรรณคดี
+//9786160551590 สังคม
+//9786160551385 ประวัติ
+//9198893462005 New Frontiers อังกฤษ
+//9786160551651 คณิตศาสตร์ เล่ม 1
+
+const CONFIG = {
+    "จันทร์": {
+        add: [
+            { code: "9786160551705", name: "คอมพิวเตอร์" }
+        ],
+        remove: [
+            { code: "9786160551651", name: "คณิตศาสตร์ เล่ม 1" },
+            { code: "9786160551590", name: "สังคม" }
+        ]
+    },
+
+    "อังคาร": {
+        add: [
+            { code: "9786160551651", name: "คณิตศาสตร์ เล่ม 1" },
+            { code: "9198893462005", name: "New Frontiers อังกฤษ"},
+            { code: "9786160551590", name: "สังคม"}
+        ],
+        remove: [
+            { code: "9786160551705", name: "คอมพิวเตอร์" },
+            { code: "", name: "ภาษาไทย" },
+            { code: "", name: "วิทย์" },
+        ]
+    },
+
+    "พุธ": {
+        add: [
+            { code: "", name: "ดนตรี" },
+            { code: "", name: "สุขศึกษา" }
+        ],
+        remove: [
+            { code: "9786160551590", name: "สังคม"}
+        ]
+    },
+
+    "พฤหัสบดี": {
+        add: [
+            { code: "", name: "ภาษาไทย" },
+            { code: "9786160551590", name: "สังคม"},
+            { code: "", name: "ประวัติ" }
+        ],
+        remove: [
+            { code: "9786160551651", name: "คณิตศาสตร์ เล่ม 1" },
+            { code: "", name: "ดนตรี" }
+        ]
+    },
+
+    "ศุกร์": {
+        add: [
+            { code: "9786160551651", name: "คณิตศาสตร์ เล่ม 1" },
+            { code: "", name: "วิทย์" },
+            { code: "", name: "ไทย" }
+        ],
+        remove: [
+            { code: "", name: "ประวัติ" },
+        ]
+    }
+}
+
+let scanned = new Set();
+
+function showList() {
+    const day = document.getElementById("day").value;
+    const config = CONFIG[day];
+
+    if (!config) {
+        document.getElementById("bookList").innerHTML = "";
+        return;
+    }
+
+    let html = "<b>📥 ต้องเอาเข้า:</b><br>";
+    config.add.forEach(b => {
+        html += `- ${b.name}<br>`;
+    });
+
+    html += "<br><b>📤 ต้องเอาออก:</b><br>";
+    config.remove.forEach(b => {
+        html += `- ${b.name}<br>`;
+    });
+
+    document.getElementById("bookList").innerHTML = html;
+}
+
+function start() {
+    const day = document.getElementById("day").value;
+    const config = CONFIG[day];
+
+    if (!config) {
+        alert("เลือกวันก่อน");
+        return;
+    }
+
+    scanned.clear();
+
+    const scanner = new Html5Qrcode("reader");
+
+    scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (code) => {
+
+            if (scanned.has(code)) return;
+            scanned.add(code);
+
+            const result = document.getElementById("result");
+
+            let foundAdd = config.add.find(b => b.code === code);
+            let foundRemove = config.remove.find(b => b.code === code);
+
+            if (foundAdd) {
+                result.innerHTML = `📥 เอาเข้า ✔ (${foundAdd.name})`;
+                result.className = "correct";
+            } 
+            else if (foundRemove) {
+                result.innerHTML = `📤 เอาออก ✔ (${foundRemove.name})`;
+                result.className = "correct";
+            } 
+            else {
+                result.innerHTML = "❌ ไม่เกี่ยว";
+                result.className = "wrong";
+            }
+
+            updateStatus(config);
+        }
+    );
+}
+
+function updateStatus(config) {
+    let html = "<b>สถานะ:</b><br>";
+
+    config.add.forEach(b => {
+        if (scanned.has(b.code)) {
+            html += `<span class="done">✔ ${b.name}</span><br>`;
+        } else {
+            html += `⏳ ${b.name}<br>`;
+        }
+    });
+
+    document.getElementById("status").innerHTML = html;
+}
+</script>
 
 </body>
 </html>
